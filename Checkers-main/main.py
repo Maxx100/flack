@@ -1,5 +1,7 @@
 import pygame
 
+SEQUENCE = "w"
+
 
 class Menu:
     def __init__(self):
@@ -57,6 +59,19 @@ class Board:
                                                                  j * self.cell_size + self.left,
                                                                  self.cell_size,
                                                                  self.cell_size), 1)
+
+        for i in range(len(self.board_sq)):
+            if self.board_sq[i] == 2:
+                pygame.draw.rect(screen, pygame.Color("blue"), ((i % 8) * self.cell_size + self.top - 1,
+                                                                (i - 1) // 8 * self.cell_size + self.left - 1,
+                                                                self.cell_size - 2,
+                                                                self.cell_size - 2))
+            elif self.board_sq[i] == 3:
+                pygame.draw.circle(screen, pygame.Color("blue"), ((i % 8) * self.cell_size +
+                                                                  self.top + self.cell_size // 2,
+                                                                  (i - 1) // 8 * self.cell_size +
+                                                                  self.left + self.cell_size // 2), self.cell_size // 4)
+
         # Отрисовка фигур
         for i in self.arr:
             temp = i.return_data()
@@ -68,35 +83,56 @@ class Board:
                                                          self.top + self.cell_size // 2,
                                                          (temp[1] - 1) // 8 * self.cell_size +
                                                          self.left + self.cell_size // 2),
-                               self.cell_size // 2)
+                               self.cell_size // 2 - 3)
 
     # Обработка нажатия на поле
     def sq_coor(self, pos):
+        global SEQUENCE
         pos = [(pos[0] - self.top) // self.cell_size, (pos[1] - self.left) // self.cell_size]
         if pos[0] > self.width - 1 or pos[1] > self.height - 1 or 0 > pos[0] or 0 > pos[1]:
             print("None")
         else:
             if 2 in self.board_sq:
-                if self.board_sq[pos[0] + pos[1] * 8] == 1:
-                    pass
-                else:
+                if self.board_sq[pos[0] + pos[1] * 8] == 1 or self.board_sq[pos[0] + pos[1] * 8] == 2:
                     self.board_sq[self.board_sq.index(2)] = 1
+                    if 3 in self.board_sq:
+                        self.board_sq[self.board_sq.index(3)] = 0
+                        if 3 in self.board_sq:
+                            self.board_sq[self.board_sq.index(3)] = 0
+                else:
+                    for i in range(len(self.arr)):
+                        if self.board_sq[pos[0] + pos[1] * 8] == self.arr[i].return_data()[1]:
+                            self.board_sq[pos[0] + pos[1] * 8] = 1
+                            self.arr.pop(i)
+                            if SEQUENCE == "w":
+                                self.arr.append(Checker("w", pos[0] + pos[1] * 8))
+                                SEQUENCE = "b"
+                            else:
+                                self.arr.append(Checker("b", pos[0] + pos[1] * 8))
+                                SEQUENCE = "w"
             else:
-                if self.board_sq[pos[0] + pos[1] * 8] == 1:
-                    self.board_sq[pos[0] + pos[1] * 8] = 2
+                for i in self.arr:
+                    if (SEQUENCE, self.board_sq[pos[0] + pos[1] * 8] + 1) == i.return_data():
+                        self.board_sq[pos[0] + pos[1] * 8] = 2
+                        if SEQUENCE == "w":
+                            self.board_sq[pos[0] + pos[1] * 8 + 7] = 3
+                            self.board_sq[pos[0] + pos[1] * 8 + 9] = 3
+                        else:
+                            self.board_sq[pos[0] + pos[1] * 8 - 7] = 3
+                            self.board_sq[pos[0] + pos[1] * 8 - 9] = 3
+                        break
             print(pos)
 
 
 # Класс шашки
 class Checker:
-    def __init__(self, color, coord, is_move=False):
+    def __init__(self, color, coord):
         self.color = color
         self.coord = coord
-        self.is_move = is_move
 
     # Запрос данных о фигуре
     def return_data(self):
-        return self.color, self.coord, self.is_move
+        return self.color, self.coord
 
 
 if __name__ == '__main__':
@@ -106,7 +142,6 @@ if __name__ == '__main__':
     screen = pygame.display.set_mode(size)
     clock = pygame.time.Clock()
     board = Board()
-    board.render()
     running = True
     while running:
         for event in pygame.event.get():
@@ -114,6 +149,8 @@ if __name__ == '__main__':
                 running = False
             elif event.type == pygame.MOUSEBUTTONUP:
                 board.sq_coor(event.pos)
+
+        board.render()
         pygame.display.flip()
         clock.tick(100)
     pygame.quit()
