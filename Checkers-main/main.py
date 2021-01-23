@@ -93,17 +93,18 @@ class Board:
                             self.board_sq[i][1] = 1
                         elif self.board_sq[i][1] == 3:
                             self.board_sq[i][1] = 0
+
+                self.board_sq[pos[0] + pos[1] * 8][1] = 2
+                if self.board_sq[pos[0] + pos[1] * 8][0] == "w":
+                    if pos[0] != 7 and self.board_sq[pos[0] + pos[1] * 8 + 9][1] != 1:
+                        self.board_sq[pos[0] + pos[1] * 8 + 9] = ["e", 3]
+                    if pos[0] != 0 and self.board_sq[pos[0] + pos[1] * 8 + 7][1] != 1:
+                        self.board_sq[pos[0] + pos[1] * 8 + 7] = ["e", 3]
                 else:
-                    if self.board_sq[pos[0] + pos[1] * 8][0] == "w":
-                        if pos[0] != 7 and self.board_sq[pos[0] + pos[1] * 8 + 9][1] != 1:
-                            self.board_sq[pos[0] + pos[1] * 8 + 9] = ["e", 3]
-                        if pos[0] != 0 and self.board_sq[pos[0] + pos[1] * 8 + 7][1] != 1:
-                            self.board_sq[pos[0] + pos[1] * 8 + 7] = ["e", 3]
-                    else:
-                        if pos[0] != 7 and self.board_sq[pos[0] + pos[1] * 8 - 9][1] != 1:
-                            self.board_sq[pos[0] + pos[1] * 8 - 9] = ["e", 3]
-                        if pos[0] != 0 and self.board_sq[pos[0] + pos[1] * 8 - 7][1] != 1:
-                            self.board_sq[pos[0] + pos[1] * 8 - 7] = ["e", 3]
+                    if pos[0] != 7 and self.board_sq[pos[0] + pos[1] * 8 - 9][1] != 1:
+                        self.board_sq[pos[0] + pos[1] * 8 - 9] = ["e", 3]
+                    if pos[0] != 0 and self.board_sq[pos[0] + pos[1] * 8 - 7][1] != 1:
+                        self.board_sq[pos[0] + pos[1] * 8 - 7] = ["e", 3]
             else:
                 for i in range(len(self.board_sq)):
                     if self.board_sq[i][1] == 2:
