@@ -84,13 +84,20 @@ class Board:
             if self.board_sq[i][1] in [1, 2, 4]:
                 if self.board_sq[i][0] == "w":
                     r = "white"
+                    r2 = (255, 230, 230)
                 else:
                     r = "black"
+                    r2 = (25, 25, 25)
                 pygame.draw.circle(screen, pygame.Color(r), ((i % 8) * self.cell_size +
                                                              self.top + self.cell_size // 2,
                                                              i // 8 * self.cell_size +
                                                              self.left + self.cell_size // 2),
                                    self.cell_size // 2 - 3)
+                pygame.draw.circle(screen, r2, ((i % 8) * self.cell_size +
+                                                              self.top + self.cell_size // 2,
+                                                              i // 8 * self.cell_size +
+                                                              self.left + self.cell_size // 2),
+                                   self.cell_size // 3)
 
     def check_beat_checker(self, color):
         for i in range(len(self.board_sq)):
@@ -155,7 +162,7 @@ class Board:
                 for i in range(len(self.board_sq)):
                     if self.board_sq[i][1] == 2:
                         is_moving = [True, i]
-                    elif self.board_sq[i][1] == 4:
+                    elif self.board_sq[i][1] in [4, 5]:
                         can_i_walk = False
                 if can_i_walk or self.board_sq[pos[0] + pos[1] * 8][1] in [4, 5]:
                     if is_moving[0]:
