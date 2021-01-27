@@ -142,23 +142,31 @@ class Board:
                                                              self.left + self.cell_size // 2),
                                    self.cell_size // 2 - 3)
                 pygame.draw.circle(screen, r2, ((i % 8) * self.cell_size +
-                                                              self.top + self.cell_size // 2,
-                                                              i // 8 * self.cell_size +
-                                                              self.left + self.cell_size // 2),
+                                                self.top + self.cell_size // 2,
+                                                i // 8 * self.cell_size +
+                                                self.left + self.cell_size // 2),
                                    self.cell_size // 3)
 
-    def check_beat_checker(self, color):
-        for i in range(len(self.board_sq)):
-            if color == self.board_sq[i][0]:
-                if self.check_beat_checker_rec_helper(i, color):
-                    self.board_sq[i][1] = 4
+    def check_beat_checker(self, color, mode="all", pos=None):
+        if mode == "all":
+            for i in range(len(self.board_sq)):
+                if color == self.board_sq[i][0]:
+                    if self.check_beat_checker_rec_helper(i, color):
+                        self.board_sq[i][1] = 4
+        elif mode == "only_one":
+            print("only_one mode selected")
+            is_continue_eat = False
+            if self.check_beat_checker_rec_helper(pos, color):
+                self.board_sq[pos][1] = 2
+                is_continue_eat = True
+            return is_continue_eat
 
     def check_beat_checker_rec_helper(self, index=0, color="w"):
         s = False
         reversed_color = "w"
         if color == "w":
             reversed_color = "b"
-        if index < 48:
+        if index < 50:
             if index % 8 > 2 and self.board_sq[index + 7] == [reversed_color, 1]:
                 if self.board_sq[index + 14][1] == 0:
                     self.board_sq[index + 14] = ["e", 5]
@@ -167,10 +175,10 @@ class Board:
             if index % 8 < 6 and self.board_sq[index + 9] == [reversed_color, 1]:
                 if index < 46:
                     if self.board_sq[index + 18][1] == 0:
-                        self.board_sq[index + 18] = [reversed_color, 5]
+                        self.board_sq[index + 18] = ["e", 5]
                         self.check_beat_checker_rec_helper(index + 18, color)
                         s = True
-        if index > 15:
+        if index > 13:
             if index % 8 < 6 and self.board_sq[index - 7] == [reversed_color, 1]:
                 if self.board_sq[index - 14][1] == 0:
                     self.board_sq[index - 14] = ["e", 5]
@@ -185,17 +193,24 @@ class Board:
         return s
 
     def check_mb_step(self, pos):
-        self.board_sq[pos[0] + pos[1] * 8][1] = 2
-        if self.board_sq[pos[0] + pos[1] * 8][0] == "w":
-            if pos[0] != 7 and self.board_sq[pos[0] + pos[1] * 8 + 9][1] != 1:
-                self.board_sq[pos[0] + pos[1] * 8 + 9] = ["e", 3]
-            if pos[0] != 0 and self.board_sq[pos[0] + pos[1] * 8 + 7][1] != 1:
-                self.board_sq[pos[0] + pos[1] * 8 + 7] = ["e", 3]
-        else:
-            if pos[0] != 7 and self.board_sq[pos[0] + pos[1] * 8 - 7][1] != 1:
-                self.board_sq[pos[0] + pos[1] * 8 - 7] = ["e", 3]
-            if pos[0] != 0 and self.board_sq[pos[0] + pos[1] * 8 - 9][1] != 1:
-                self.board_sq[pos[0] + pos[1] * 8 - 9] = ["e", 3]
+        is_need_eat = False
+        for i in range(len(self.board_sq)):
+            if self.board_sq[i][1] in [4, 5]:
+                is_need_eat = True
+                break
+        if self.board_sq[pos[0] + pos[1] * 8][1] in [1, 4]:
+            self.board_sq[pos[0] + pos[1] * 8][1] = 2
+        if not is_need_eat:
+            if self.board_sq[pos[0] + pos[1] * 8][0] == "w":
+                if pos[0] != 7 and self.board_sq[pos[0] + pos[1] * 8 + 9][1] != 1:
+                    self.board_sq[pos[0] + pos[1] * 8 + 9] = ["e", 3]
+                if pos[0] != 0 and self.board_sq[pos[0] + pos[1] * 8 + 7][1] != 1:
+                    self.board_sq[pos[0] + pos[1] * 8 + 7] = ["e", 3]
+            else:
+                if pos[0] != 7 and self.board_sq[pos[0] + pos[1] * 8 - 7][1] != 1:
+                    self.board_sq[pos[0] + pos[1] * 8 - 7] = ["e", 3]
+                if pos[0] != 0 and self.board_sq[pos[0] + pos[1] * 8 - 9][1] != 1:
+                    self.board_sq[pos[0] + pos[1] * 8 - 9] = ["e", 3]
 
     # Обработка нажатия на поле
     def sq_coor(self, pos):
@@ -215,16 +230,23 @@ class Board:
                 if can_i_walk or self.board_sq[pos[0] + pos[1] * 8][1] in [4, 5]:
                     if is_moving[0]:
                         if self.board_sq[pos[0] + pos[1] * 8][1] == 5:
-                            self.board_sq[pos[0] + pos[1] * 8] = self.board_sq[is_moving[1]]
-                            self.board_sq[is_moving[1]] = ["e", 0]
-                            self.board_sq[abs(pos[0] + pos[1] * 8 + is_moving[1]) // 2] = ["e", 0]
-                            if SEQUENCE == "w":
-                                SEQUENCE = "b"
-                            else:
-                                SEQUENCE = "w"
+                            if abs(pos[0] + pos[1] * 8 - is_moving[1]) in [14, 18]:
+                                self.board_sq[pos[0] + pos[1] * 8] = self.board_sq[is_moving[1]]
+                                self.board_sq[is_moving[1]] = ["e", 0]
+                                self.board_sq[abs(pos[0] + pos[1] * 8 + is_moving[1]) // 2] = ["e", 0]
+                                self.clear_board()
+                                if self.check_beat_checker(SEQUENCE, mode="only_one", pos=pos[0] + pos[1] * 8):
+                                    pass
+                                else:
+                                    if SEQUENCE == "w":
+                                        SEQUENCE = "b"
+                                    else:
+                                        SEQUENCE = "w"
+                                    self.clear_board()
                         else:
                             if self.board_sq[pos[0] + pos[1] * 8] == [SEQUENCE, 1]:
                                 self.clear_board()
+                                self.check_beat_checker(SEQUENCE)
                                 self.check_mb_step(pos)
                             else:
                                 if self.board_sq[pos[0] + pos[1] * 8][1] == 3:
@@ -235,14 +257,13 @@ class Board:
                                     else:
                                         SEQUENCE = "w"
                                 self.clear_board()
-                    elif self.board_sq[pos[0] + pos[1] * 8][1] == 5:
-                        self.clear_board()
+                                self.check_beat_checker(SEQUENCE)
                     else:
                         self.check_mb_step(pos)
             else:
                 self.clear_board()
+                self.check_beat_checker(SEQUENCE)
             print(pos)
-        self.check_beat_checker(SEQUENCE)
 
 
 if __name__ == '__main__':
