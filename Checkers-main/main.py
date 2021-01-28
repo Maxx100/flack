@@ -93,9 +93,6 @@ class Board:
             elif self.board_sq[i][1] in [3, 5]:
                 self.board_sq[i][1] = 0
 
-    def end_game(self, color="w"):
-        pass
-
     # Рендер поля
     def render(self):
         # Фон
@@ -237,9 +234,9 @@ class Board:
                     break
         if not can_walk:
             if color == "w":
-                print("Белые победили!")
+                print("Черные победили!")
             else:
-                print("Черные победили! (Это не расизм)")
+                print("Белые победили!")
 
     # Обработка нажатия на поле
     def sq_coor(self, pos):
@@ -283,11 +280,11 @@ class Board:
                                 if self.board_sq[pos[0] + pos[1] * 8][1] == 3:
                                     self.board_sq[pos[0] + pos[1] * 8] = self.board_sq[is_moving[1]]
                                     self.board_sq[is_moving[1]] = ["e", 0]
-                                    self.check_winner(color=SEQUENCE)
                                     if SEQUENCE == "w":
                                         SEQUENCE = "b"
                                     else:
                                         SEQUENCE = "w"
+                                    self.check_winner(color=SEQUENCE)
                                 self.clear_board()
                                 self.check_beat_checker(SEQUENCE)
                     else:
