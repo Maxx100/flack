@@ -235,9 +235,9 @@ class Board:
                         self.board_sq[pos[0] + pos[1] * 8 - 9] = ["e", 3]
                         is_can_walk = True
         else:
+            if self.board_sq[pos[0] + pos[1] * 8][1] in [6, 8]:
+                self.board_sq[pos[0] + pos[1] * 8][1] = 7
             if not is_need_eat:
-                if self.board_sq[pos[0] + pos[1] * 8][1] in [6, 8]:
-                    self.board_sq[pos[0] + pos[1] * 8][1] = 7
                 temp = [7, 9, -7, -9]
                 pos_index = pos[0] + pos[1] * 8
                 for k in temp:
@@ -279,7 +279,7 @@ class Board:
                 for i in range(len(self.board_sq)):
                     if self.board_sq[i][1] in [2, 7]:
                         is_moving = [True, i]
-                    elif self.board_sq[i][1] in [4, 5]:
+                    elif self.board_sq[i][1] in [4, 5, 8]:
                         can_i_walk = False
                 if can_i_walk or self.board_sq[pos[0] + pos[1] * 8][1] in [4, 5, 8]:
                     if is_moving[0]:
@@ -320,10 +320,13 @@ class Board:
                                 self.clear_board()
                                 self.check_beat_checker(SEQUENCE)
                     else:
-                        if self.board_sq[pos[0] + pos[1] * 8][1] == 6:
+                        if self.board_sq[pos[0] + pos[1] * 8][1] in [6, 8]:
                             self.check_mb_step(pos, is_queen=True)
                         else:
                             self.check_mb_step(pos)
+                else:
+                    self.clear_board()
+                    self.check_beat_checker(SEQUENCE)
             else:
                 self.clear_board()
                 self.check_beat_checker(SEQUENCE)
