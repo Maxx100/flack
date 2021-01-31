@@ -145,7 +145,6 @@ class Board:
 
     def main_multiplayer_client(self, ip):
         sock = socket.socket()
-        ip = "localhost"
         sock.connect((ip, 9090))
         while self.is_playing:
             sock.send(bytes(self.board_sq))
