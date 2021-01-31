@@ -1,4 +1,5 @@
 import pygame
+import socket
 
 SEQUENCE = "w"
 
@@ -59,6 +60,27 @@ class Menu:
             print('second')
 
 
+def moving(pos):
+    temp = [7, 9, -7, -9]
+    if pos[0] == 0:
+        temp.remove(7)
+        temp.remove(-9)
+    if pos[0] == 7:
+        temp.remove(-7)
+        temp.remove(9)
+    if pos[1] == 0:
+        if -7 in temp:
+            temp.remove(-7)
+        if -9 in temp:
+            temp.remove(-9)
+    if pos[1] == 7:
+        if 7 in temp:
+            temp.remove(7)
+        if 9 in temp:
+            temp.remove(9)
+    return temp
+
+
 class Board:
     def __init__(self):
         # Список фигур
@@ -86,6 +108,7 @@ class Board:
         self.left = 10
         self.top = 10
         self.cell_size = 85
+        self.is_playing = True
 
     def clear_board(self):
         for i in range(len(self.board_sq)):
@@ -95,6 +118,39 @@ class Board:
                 self.board_sq[i][1] = 0
             elif self.board_sq[i][1] in [7, 8]:
                 self.board_sq[i][1] = 6
+
+    def main_multiplayer_server(self):
+        sock = socket.socket()
+        sock.bind(("localhost", 9090))
+        sock.listen(1)
+        conn, addr = sock.accept()
+        print("LOG: connected:", addr)
+        while self.is_playing:
+            running = True
+            while running:
+                is_waiting = False
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        running = False
+                    elif event.type == pygame.MOUSEBUTTONUP:
+                        self.sq_coor(event.pos)
+                        conn.send(bytes(self.board_sq))
+                        is_waiting = True
+                if is_waiting:
+                    data = conn.recv(1024)
+                pygame.display.flip()
+                clock.tick(100)
+            pygame.quit()
+        conn.close()
+
+    def main_multiplayer_client(self, ip):
+        sock = socket.socket()
+        ip = "localhost"
+        sock.connect((ip, 9090))
+        while self.is_playing:
+            sock.send(bytes(self.board_sq))
+            self.board_sq = sock.recv(1024)
+        sock.close()
 
     # Рендер поля
     def render(self):
@@ -110,7 +166,6 @@ class Board:
 
         for i in range(len(self.board_sq)):
             if self.board_sq[i][1] in [2, 7]:
-                print("RENDERING")
                 pygame.draw.rect(screen, pygame.Color("blue"), ((i % 8) * self.cell_size + self.top + 1,
                                                                 i // 8 * self.cell_size + self.left + 1,
                                                                 self.cell_size - 2,
@@ -171,12 +226,24 @@ class Board:
         elif mode == "only_one":
             is_continue_eat = False
             if self.check_beat_checker_rec_helper(pos, color):
-                if self.board_sq[pos][1] == 1:
-                    self.board_sq[pos][1] = 2
-                else:
-                    self.board_sq[pos][1] = 7
+                self.board_sq[pos][1] = 2
                 is_continue_eat = True
             return is_continue_eat
+        elif mode == "queen":
+            reversed_color = "w"
+            if color == "w":
+                reversed_color = "b"
+            temp = moving([pos % 8, pos // 8])
+            for k in temp:
+                for i in range(1, 8):
+                    if self.board_sq[pos][1] in [1, 6] \
+                            and self.board_sq[pos][0] == reversed_color \
+                            and pos % 8 not in [7, 0] and pos // 8 not in [7, 0]:
+                        is_continue_eat = False
+                        if self.check_beat_checker_rec_helper(pos, color):
+                            self.board_sq[pos][1] = 2
+                            is_continue_eat = True
+                        return is_continue_eat
 
     def check_beat_checker_rec_helper(self, index=0, color="w"):
         s = False
@@ -238,7 +305,7 @@ class Board:
             if self.board_sq[pos[0] + pos[1] * 8][1] in [6, 8]:
                 self.board_sq[pos[0] + pos[1] * 8][1] = 7
             if not is_need_eat:
-                temp = [7, 9, -7, -9]
+                temp = moving(pos)
                 pos_index = pos[0] + pos[1] * 8
                 for k in temp:
                     for i in range(1, 8):
@@ -265,6 +332,7 @@ class Board:
                 print("Черные победили!")
             else:
                 print("Белые победили!")
+            self.is_playing = False
 
     # Обработка нажатия на поле
     def sq_coor(self, pos):
@@ -289,7 +357,11 @@ class Board:
                                 self.board_sq[is_moving[1]] = ["e", 0]
                                 self.board_sq[abs(pos[0] + pos[1] * 8 + is_moving[1]) // 2] = ["e", 0]
                                 self.clear_board()
-                                if self.check_beat_checker(SEQUENCE, mode="only_one", pos=pos[0] + pos[1] * 8):
+                                if self.board_sq[pos[0] + pos[1] * 8][1] in [1, 2, 4]\
+                                        and self.check_beat_checker(SEQUENCE, mode="only_one", pos=pos[0] + pos[1] * 8):
+                                    pass
+                                elif self.board_sq[pos[0] + pos[1] * 8][1] in [6, 7, 8]\
+                                        and self.check_beat_checker(SEQUENCE, mode="queen", pos=pos[0] + pos[1] * 8):
                                     pass
                                 else:
                                     self.check_winner(color=SEQUENCE)
@@ -321,7 +393,8 @@ class Board:
                                 self.check_beat_checker(SEQUENCE)
                     else:
                         if self.board_sq[pos[0] + pos[1] * 8][1] in [6, 8]:
-                            self.check_mb_step(pos, is_queen=True)
+                            if not self.check_beat_checker(SEQUENCE, pos=pos[0] + pos[1] * 8):
+                                self.check_mb_step(pos, is_queen=True)
                         else:
                             self.check_mb_step(pos)
                 else:
