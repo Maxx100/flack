@@ -1,5 +1,4 @@
 import pygame
-import socket
 
 SEQUENCE = "w"
 
@@ -60,27 +59,6 @@ class Menu:
             print('second')
 
 
-def moving(pos):
-    temp = [7, 9, -7, -9]
-    if pos[0] == 0:
-        temp.remove(7)
-        temp.remove(-9)
-    if pos[0] == 7:
-        temp.remove(-7)
-        temp.remove(9)
-    if pos[1] == 0:
-        if -7 in temp:
-            temp.remove(-7)
-        if -9 in temp:
-            temp.remove(-9)
-    if pos[1] == 7:
-        if 7 in temp:
-            temp.remove(7)
-        if 9 in temp:
-            temp.remove(9)
-    return temp
-
-
 class Board:
     def __init__(self):
         # Список фигур
@@ -91,7 +69,7 @@ class Board:
         """
         Клетки: 0 - пусто 1 - шашка  2 - шашка взята  3 - подсвет как возможный ход 
                 4 - ход должен быть сделан этой шашкой  5 - ход должен быть совершен на эту клетку
-                6 - дамка  7 - дамка взята  8 - ход должен быть сделан этой дамкой
+                6 - дамка
         """
         # Заполнение
         for k in range(0, 7, 2):
@@ -101,21 +79,12 @@ class Board:
             self.board_sq[k + 41] = ["b", 1]
             self.board_sq[k + 48] = ["b", 1]
             self.board_sq[k + 57] = ["b", 1]
-        """self.board_sq = [['w', 1], ['e', 0], ['w', 1], ['e', 0], ['e', 0], ['e', 0], ['b', 1], ['e', 0], ['e', 0],
-                         ['w', 1], ['e', 0], ['e', 0], ['e', 0], ['e', 0], ['e', 0], ['e', 0], ['w', 1], ['e', 0],
-                         ['w', 1], ['e', 0], ['w', 1], ['e', 0], ['e', 0], ['e', 0], ['e', 0], ['e', 0], ['e', 0],
-                         ['e', 0], ['e', 0], ['e', 0], ['e', 0], ['e', 0], ['e', 0], ['e', 0], ['e', 0], ['e', 0],
-                         ['w', 1], ['e', 0], ['e', 0], ['e', 0], ['e', 0], ['b', 1], ['e', 0], ['e', 0], ['e', 0],
-                         ['e', 0], ['e', 0], ['e', 0], ['b', 1], ['e', 0], ['b', 1], ['e', 0], ['b', 1], ['e', 0],
-                         ['e', 0], ['e', 0], ['e', 0], ['b', 1], ['e', 0], ['b', 1], ['e', 0], ['b', 1], ['e', 0],
-                         ['b', 1]]"""
         # Стандартные значения графики
         self.width = 8
         self.height = 8
         self.left = 10
         self.top = 10
         self.cell_size = 85
-        self.is_playing = True
 
     def clear_board(self):
         for i in range(len(self.board_sq)):
@@ -123,40 +92,9 @@ class Board:
                 self.board_sq[i][1] = 1
             elif self.board_sq[i][1] in [3, 5]:
                 self.board_sq[i][1] = 0
-            elif self.board_sq[i][1] in [7, 8]:
-                self.board_sq[i][1] = 6
 
-    def main_multiplayer_server(self):
-        sock = socket.socket()
-        sock.bind(("localhost", 9090))
-        sock.listen(1)
-        conn, addr = sock.accept()
-        print("LOG: connected:", addr)
-        while self.is_playing:
-            running = True
-            while running:
-                is_waiting = False
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        running = False
-                    elif event.type == pygame.MOUSEBUTTONUP:
-                        self.sq_coor(event.pos)
-                        conn.send(bytes(self.board_sq))
-                        is_waiting = True
-                if is_waiting:
-                    data = conn.recv(1024)
-                pygame.display.flip()
-                clock.tick(100)
-            pygame.quit()
-        conn.close()
-
-    def main_multiplayer_client(self, ip):
-        sock = socket.socket()
-        sock.connect((ip, 9090))
-        while self.is_playing:
-            sock.send(bytes(self.board_sq))
-            self.board_sq = sock.recv(1024)
-        sock.close()
+    def end_game(self, color="w"):
+        pass
 
     # Рендер поля
     def render(self):
@@ -171,7 +109,7 @@ class Board:
                                                                  self.cell_size), 1)
 
         for i in range(len(self.board_sq)):
-            if self.board_sq[i][1] in [2, 7]:
+            if self.board_sq[i][1] == 2:
                 pygame.draw.rect(screen, pygame.Color("blue"), ((i % 8) * self.cell_size + self.top + 1,
                                                                 i // 8 * self.cell_size + self.left + 1,
                                                                 self.cell_size - 2,
@@ -181,7 +119,7 @@ class Board:
                                                                   self.top + self.cell_size // 2,
                                                                   i // 8 * self.cell_size +
                                                                   self.left + self.cell_size // 2), self.cell_size // 4)
-            elif self.board_sq[i][1] in [4, 8]:
+            elif self.board_sq[i][1] == 4:
                 pygame.draw.rect(screen, pygame.Color("green"), ((i % 8) * self.cell_size + self.top + 1,
                                                                  i // 8 * self.cell_size + self.left + 1,
                                                                  self.cell_size - 2,
@@ -195,7 +133,7 @@ class Board:
 
         # Отрисовка фигур
         for i in range(len(self.board_sq)):
-            if self.board_sq[i][1] in [1, 2, 4, 6, 7, 8]:
+            if self.board_sq[i][1] in [1, 2, 4, 6]:
                 if self.board_sq[i][0] == "w":
                     r = "white"
                     r2 = (255, 230, 230)
@@ -207,7 +145,7 @@ class Board:
                                                              i // 8 * self.cell_size +
                                                              self.left + self.cell_size // 2),
                                    self.cell_size // 2 - 3)
-                if self.board_sq[i][1] in [6, 7, 8]:
+                if self.board_sq[i][1] == 6:
                     pygame.draw.circle(screen, (0, 255, 240), ((i % 8) * self.cell_size +
                                                                self.top + self.cell_size // 2,
                                                                i // 8 * self.cell_size +
@@ -221,137 +159,73 @@ class Board:
                                        self.cell_size // 3)
 
     def check_beat_checker(self, color, mode="all", pos=None):
-        if pos or mode == "all":
-            if mode == "all":
-                print("ALL!!!")
-                for i in range(len(self.board_sq)):
-                    if color == self.board_sq[i][0]:
-                        if self.board_sq[i][1] == 1:
-                            if self.check_beat_checker_rec_helper(i, color):
-                                self.board_sq[i][1] = 4
-                        else:
-                            if self.check_beat_checker_rec_helper(i, color, mode="queen"):
-                                self.board_sq[i][1] = 8
-                self.check_beat_checker(color, "queen", pos)
-            elif mode == "only_one":
-                print("ONLY ONE!!!")
-                is_continue_eat = False
-                if self.check_beat_checker_rec_helper(pos, color):
-                    if self.board_sq[pos][1] != 0:
-                        print(self.board_sq[pos][1])
-                    self.board_sq[pos][1] = 2
-                    is_continue_eat = True
-                return is_continue_eat
+        if mode == "all":
+            for i in range(len(self.board_sq)):
+                if color == self.board_sq[i][0]:
+                    if self.check_beat_checker_rec_helper(i, color):
+                        self.board_sq[i][1] = 4
+        elif mode == "only_one":
+            is_continue_eat = False
+            if self.check_beat_checker_rec_helper(pos, color):
+                self.board_sq[pos][1] = 2
+                is_continue_eat = True
+            return is_continue_eat
 
-    def check_beat_checker_rec_helper(self, index=0, color="w", mode="checker", direct=0):
+    def check_beat_checker_rec_helper(self, index=0, color="w"):
         s = False
         reversed_color = "w"
         if color == "w":
             reversed_color = "b"
-        if mode == "checker":
-            if index < 50:
-                if index % 8 > 1 and self.board_sq[index + 7] in [[reversed_color, 1], [reversed_color, 6]]\
-                        and direct != 7:
-                    if self.board_sq[index + 14][1] == 0:
-                        self.board_sq[index + 14] = ["e", 5]
-                        self.check_beat_checker_rec_helper(index + 14, color)
+        if index < 50:
+            if index % 8 > 1 and self.board_sq[index + 7] == [reversed_color, 1]:
+                if self.board_sq[index + 14][1] == 0:
+                    self.board_sq[index + 14] = ["e", 5]
+                    self.check_beat_checker_rec_helper(index + 14, color)
+                    s = True
+            if index % 8 < 6 and self.board_sq[index + 9] == [reversed_color, 1]:
+                if index < 46:
+                    if self.board_sq[index + 18][1] == 0:
+                        self.board_sq[index + 18] = ["e", 5]
+                        self.check_beat_checker_rec_helper(index + 18, color)
                         s = True
-                if index % 8 < 6 and self.board_sq[index + 9] in [[reversed_color, 1], [reversed_color, 6]]\
-                        and direct != 9:
-                    if index < 46:
-                        if self.board_sq[index + 18][1] == 0:
-                            self.board_sq[index + 18] = ["e", 5]
-                            self.check_beat_checker_rec_helper(index + 18, color)
-                            s = True
-            if index > 13:
-                if index % 8 < 6 and self.board_sq[index - 7] in [[reversed_color, 1], [reversed_color, 6]]\
-                        and direct != -7:
-                    if self.board_sq[index - 14][1] == 0:
-                        self.board_sq[index - 14] = ["e", 5]
-                        self.check_beat_checker_rec_helper(index - 14, color)
+        if index > 13:
+            if index % 8 < 6 and self.board_sq[index - 7] == [reversed_color, 1]:
+                if self.board_sq[index - 14][1] == 0:
+                    self.board_sq[index - 14] = ["e", 5]
+                    self.check_beat_checker_rec_helper(index - 14, color)
+                    s = True
+            if index % 8 > 1 and self.board_sq[index - 9] == [reversed_color, 1]:
+                if index > 17:
+                    if self.board_sq[index - 18][1] == 0:
+                        self.board_sq[index - 18] = ["e", 5]
+                        self.check_beat_checker_rec_helper(index - 18, color)
                         s = True
-                if index % 8 > 1 and self.board_sq[index - 9] in [[reversed_color, 1], [reversed_color, 6]]\
-                        and direct != -9:
-                    if index > 17:
-                        if self.board_sq[index - 18][1] == 0:
-                            self.board_sq[index - 18] = ["e", 5]
-                            self.check_beat_checker_rec_helper(index - 18, color)
-                            s = True
-        else:
-            temp = [7, 9, -7, -9]
-            if index % 8 == 0:
-                temp.remove(7)
-                temp.remove(-9)
-            if index % 8 == 7:
-                temp.remove(-7)
-                temp.remove(9)
-            if index // 8 == 0:
-                if -7 in temp:
-                    temp.remove(-7)
-                if -9 in temp:
-                    temp.remove(-9)
-            if index // 8 == 7:
-                if 7 in temp:
-                    temp.remove(7)
-                if 9 in temp:
-                    temp.remove(9)
-            for k in temp:
-                for i in range(1, 8):
-                    if 0 <= index + k * i <= 63:
-                        if self.board_sq[index + k * i][0] == reversed_color:
-                            if 0 <= index + k * (i + 1) <= 63 and self.board_sq[index + k * (i + 1)][1] == 0:
-                                self.check_beat_checker_rec_helper(index=index + k * (i + 1), color=color, direct=-k)
-                                s = True
-                            else:
-                                break
-                        elif self.board_sq[index + k * i][0] == color:
-                            break
-                    else:
-                        break
         return s
 
-    def check_mb_step(self, pos, is_queen=False):
+    def check_mb_step(self, pos):
         is_need_eat = False
         is_can_walk = False
         for i in range(len(self.board_sq)):
-            if self.board_sq[i][1] in [4, 5, 8]:
+            if self.board_sq[i][1] in [4, 5]:
                 is_need_eat = True
                 break
-        if not is_queen:
-            if self.board_sq[pos[0] + pos[1] * 8][1] in [1, 4]:
-                self.board_sq[pos[0] + pos[1] * 8][1] = 2
-            if not is_need_eat:
-                if self.board_sq[pos[0] + pos[1] * 8][0] == "w":
-                    if pos[0] != 7 and self.board_sq[pos[0] + pos[1] * 8 + 9][1] not in [1, 6]:
-                        self.board_sq[pos[0] + pos[1] * 8 + 9] = ["e", 3]
-                        is_can_walk = True
-                    if pos[0] != 0 and self.board_sq[pos[0] + pos[1] * 8 + 7][1] not in [1, 6]:
-                        self.board_sq[pos[0] + pos[1] * 8 + 7] = ["e", 3]
-                        is_can_walk = True
-                else:
-                    if pos[0] != 7 and self.board_sq[pos[0] + pos[1] * 8 - 7][1] not in [1, 6]:
-                        self.board_sq[pos[0] + pos[1] * 8 - 7] = ["e", 3]
-                        is_can_walk = True
-                    if pos[0] != 0 and self.board_sq[pos[0] + pos[1] * 8 - 9][1] not in [1, 6]:
-                        self.board_sq[pos[0] + pos[1] * 8 - 9] = ["e", 3]
-                        is_can_walk = True
-        else:
-            if self.board_sq[pos[0] + pos[1] * 8][1] in [6, 8]:
-                self.board_sq[pos[0] + pos[1] * 8][1] = 7
-            if not is_need_eat:
-                temp = moving(pos)
-                pos_index = pos[0] + pos[1] * 8
-                for k in temp:
-                    for i in range(1, 8):
-                        temp_pi = pos_index + k * i
-                        pos = [temp_pi % 8, temp_pi // 8]
-                        if self.board_sq[pos[0] + pos[1] * 8][1] not in [1, 6]:
-                            self.board_sq[pos[0] + pos[1] * 8] = ["e", 3]
-                            is_can_walk = True
-                        else:
-                            break
-                        if pos[0] in [7, 0] or pos[1] in [7, 0]:
-                            break
+        if self.board_sq[pos[0] + pos[1] * 8][1] in [1, 4]:
+            self.board_sq[pos[0] + pos[1] * 8][1] = 2
+        if not is_need_eat:
+            if self.board_sq[pos[0] + pos[1] * 8][0] == "w":
+                if pos[0] != 7 and self.board_sq[pos[0] + pos[1] * 8 + 9][1] != 1:
+                    self.board_sq[pos[0] + pos[1] * 8 + 9] = ["e", 3]
+                    is_can_walk = True
+                if pos[0] != 0 and self.board_sq[pos[0] + pos[1] * 8 + 7][1] != 1:
+                    self.board_sq[pos[0] + pos[1] * 8 + 7] = ["e", 3]
+                    is_can_walk = True
+            else:
+                if pos[0] != 7 and self.board_sq[pos[0] + pos[1] * 8 - 7][1] != 1:
+                    self.board_sq[pos[0] + pos[1] * 8 - 7] = ["e", 3]
+                    is_can_walk = True
+                if pos[0] != 0 and self.board_sq[pos[0] + pos[1] * 8 - 9][1] != 1:
+                    self.board_sq[pos[0] + pos[1] * 8 - 9] = ["e", 3]
+                    is_can_walk = True
         return is_can_walk
 
     def check_winner(self, color="w"):
@@ -363,10 +237,9 @@ class Board:
                     break
         if not can_walk:
             if color == "w":
-                print("Черные победили!")
-            else:
                 print("Белые победили!")
-            self.is_playing = False
+            else:
+                print("Черные победили!")
 
     # Обработка нажатия на поле
     def sq_coor(self, pos):
@@ -379,70 +252,54 @@ class Board:
                 is_moving = [False, 0]
                 can_i_walk = True
                 for i in range(len(self.board_sq)):
-                    if self.board_sq[i][1] in [2, 7]:
+                    if self.board_sq[i][1] == 2:
                         is_moving = [True, i]
-                    elif self.board_sq[i][1] in [4, 5, 8]:
+                    elif self.board_sq[i][1] in [4, 5]:
                         can_i_walk = False
-                if can_i_walk or self.board_sq[pos[0] + pos[1] * 8][1] in [4, 5, 8]:
+                if can_i_walk or self.board_sq[pos[0] + pos[1] * 8][1] in [4, 5]:
                     if is_moving[0]:
                         if self.board_sq[pos[0] + pos[1] * 8][1] == 5:
-                            if is_moving[1] - self.board_sq[pos[0] + pos[1] * 8]:
-                                if abs(pos[0] + pos[1] * 8 - is_moving[1]) in [14, 18]:
-                                    self.board_sq[pos[0] + pos[1] * 8] = self.board_sq[is_moving[1]]
-                                    self.board_sq[is_moving[1]] = ["e", 0]
-                                    self.board_sq[abs(pos[0] + pos[1] * 8 + is_moving[1]) // 2] = ["e", 0]
-                                    self.clear_board()
-                                    if self.board_sq[pos[0] + pos[1] * 8][1] in [1, 2, 4] \
-                                            and self.check_beat_checker(SEQUENCE, mode="only_one", pos=pos[0] + pos[1] * 8):
-                                        pass
-                                    elif self.board_sq[pos[0] + pos[1] * 8][1] in [6, 7, 8] \
-                                            and self.check_beat_checker(SEQUENCE, mode="queen", pos=pos[0] + pos[1] * 8):
-                                        pass
+                            if abs(pos[0] + pos[1] * 8 - is_moving[1]) in [14, 18]:
+                                self.board_sq[pos[0] + pos[1] * 8] = self.board_sq[is_moving[1]]
+                                self.board_sq[is_moving[1]] = ["e", 0]
+                                self.board_sq[abs(pos[0] + pos[1] * 8 + is_moving[1]) // 2] = ["e", 0]
+                                self.clear_board()
+                                if self.check_beat_checker(SEQUENCE, mode="only_one", pos=pos[0] + pos[1] * 8):
+                                    pass
+                                else:
+                                    self.check_winner(color=SEQUENCE)
+                                    if SEQUENCE == "w":
+                                        SEQUENCE = "b"
                                     else:
-                                        self.check_winner(color=SEQUENCE)
-                                        if SEQUENCE == "w":
-                                            SEQUENCE = "b"
-                                        else:
-                                            SEQUENCE = "w"
-                                        self.clear_board()
-                                        self.check_beat_checker(SEQUENCE)
+                                        SEQUENCE = "w"
+                                    self.clear_board()
+                                    self.check_beat_checker(SEQUENCE)
                         else:
                             if self.board_sq[pos[0] + pos[1] * 8] == [SEQUENCE, 1]:
                                 self.clear_board()
                                 self.check_beat_checker(SEQUENCE)
                                 self.check_mb_step(pos)
-                            elif self.board_sq[pos[0] + pos[1] * 8] == [SEQUENCE, 6]:
-                                self.clear_board()
-                                self.check_beat_checker(SEQUENCE)
-                                self.check_mb_step(pos, is_queen=True)
                             else:
                                 if self.board_sq[pos[0] + pos[1] * 8][1] == 3:
                                     self.board_sq[pos[0] + pos[1] * 8] = self.board_sq[is_moving[1]]
                                     self.board_sq[is_moving[1]] = ["e", 0]
+                                    self.check_winner(color=SEQUENCE)
                                     if SEQUENCE == "w":
                                         SEQUENCE = "b"
                                     else:
                                         SEQUENCE = "w"
-                                    self.check_winner(color=SEQUENCE)
                                 self.clear_board()
                                 self.check_beat_checker(SEQUENCE)
                     else:
-                        if self.board_sq[pos[0] + pos[1] * 8][1] in [6, 8]:
-                            if not self.check_beat_checker(SEQUENCE, pos=pos[0] + pos[1] * 8):
-                                self.check_mb_step(pos, is_queen=True)
-                        else:
-                            self.check_mb_step(pos)
-                else:
-                    self.clear_board()
-                    self.check_beat_checker(SEQUENCE)
+                        self.check_mb_step(pos)
             else:
                 self.clear_board()
                 self.check_beat_checker(SEQUENCE)
-            print("POS:", pos, "| INDEX:", pos[0] + pos[1] * 8, "| STATUS:", self.board_sq[pos[0] + pos[1] * 8])
+            print(pos)
         for i in range(8):
-            if self.board_sq[i][0] == "b" and self.board_sq[i][1] not in [6, 7, 8]:
+            if self.board_sq[i][0] == "b":
                 self.board_sq[i][1] = 6
-            if self.board_sq[i + 56][0] == "w" and self.board_sq[i][1] not in [6, 7, 8]:
+            if self.board_sq[i + 56][0] == "w":
                 self.board_sq[i + 56][1] = 6
 
 
